@@ -4,9 +4,9 @@
   "description": "API Rest para la gestión de eventos.",
   "main": "app.js",
   "scripts": {
-    "start": "set NODE_ENV=production && node ./bin/www",
+    "start": "set NODE_ENV=production && node app.js",
     "start:dev": "set NODE_ENV=development && nodemon app.js",
-    "start:test": "set NODE_ENV=test && nodemon /bin/www",
+    "start:test": "set NODE_ENV=test && nodemon app.js",
     "watch": "webpack --watch"
   },
   "dependencies": {

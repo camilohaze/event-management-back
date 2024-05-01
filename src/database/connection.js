@@ -9,6 +9,9 @@ const connection = db.createConnection({
   user: USERNAME,
   password: PASSWORD,
   database: DATABASE,
+  maxIdle: 0,
+  idleTimeout: 60000,
+  enableKeepAlive: true,
 });
 
 module.exports = connection.promise();

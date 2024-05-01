@@ -3,7 +3,7 @@ use `event-management`;
 CREATE TABLE IF NOT EXISTS users (
 	id INT AUTO_INCREMENT,
 	username VARCHAR(30) NOT NULL,
-	password VARCHAR(25) NOT NULL,
+	password VARCHAR(100) NOT NULL,
 	PRIMARY KEY (id)
 );
 
@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS events (
 	id INT AUTO_INCREMENT,
 	title VARCHAR(125) NOT NULL,
+  image VARCHAR(150) NOT NULL,
 	startDate DATE NOT NULL,
 	endDate DATE NOT NULL,
 	location VARCHAR(150) NOT NULL,

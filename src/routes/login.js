@@ -18,7 +18,7 @@ const db = require("./../database/connection");
  *          type: string
  *          required: true
  *          example: cristian.naranjo@outlook.es
- *        name:
+ *        password:
  *          type: string
  *          required: true
  *          example: Asdf1234.

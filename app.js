@@ -33,7 +33,9 @@ const swaggerOptions = {
   apis: [
     './src/routes/login.js',
     './src/routes/logout.js',
-    './src/routes/register.js'
+    './src/routes/register.js',
+    './src/routes/events.js',
+    './src/routes/attendees.js'
   ],
 };
 
@@ -63,6 +65,7 @@ const logout = require('./src/routes/logout');
 const register = require('./src/routes/register');
 
 const events = require('./src/routes/events');
+const attendees = require('./src/routes/attendees');
 
 app.get('/', (request, response) => {
   response.json({
@@ -86,7 +89,7 @@ app.use('/events', events);
 /**
  * Registro de asistentes.
  */
-// app.use('/attendees', {});
+app.use('/attendees', attendees);
 
 /**
  * Consultar información de eventos, asistentes y lugares cercanos.
