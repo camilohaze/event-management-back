@@ -1,0 +1,41 @@
+use `event-management`;
+
+CREATE TABLE IF NOT EXISTS users (
+	id INT AUTO_INCREMENT,
+	username VARCHAR(30) NOT NULL,
+	password VARCHAR(25) NOT NULL,
+	PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS profiles (
+	id INT AUTO_INCREMENT,
+	firstName VARCHAR(50) NOT NULL,
+	lastName VARCHAR(50) NOT NULL,
+	phone VARCHAR(15) NULL,
+	userId INT NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS events (
+	id INT AUTO_INCREMENT,
+	title VARCHAR(125) NOT NULL,
+	startDate DATE NOT NULL,
+	endDate DATE NOT NULL,
+	location VARCHAR(150) NOT NULL,
+	latitude VARCHAR(50) NOT NULL,
+	longitude VARCHAR(50) NOT NULL,
+	userId INT NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS attendees (
+	id INT AUTO_INCREMENT,
+	date DATE NOT NULL,
+	eventId INT NOT NULL,
+	userId INT NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY (eventId) REFERENCES events(id),
+	FOREIGN KEY (userId) REFERENCES users(id)
+);
