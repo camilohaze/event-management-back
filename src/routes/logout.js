@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const authorization = require("../auth/authorization");
+const authorization = require("./../auth");
 
 /**
  * @swagger
+ * /logout:
  *  tags:
  *    name: Logout
- * /logout:
  *  post:
  *    summary: Cerrar session.
  *    tags: [Logout]
@@ -14,6 +14,11 @@ const authorization = require("../auth/authorization");
  *    responses:
  *      201:
  *        description: Session finalizada.
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              $ref: '#/components/schemas/ResponseLogin'
  *      401:
  *        description: Falta información de autorización o no es válida
  *      500:

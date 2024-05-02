@@ -1,11 +1,11 @@
 const ENV = process.env.NODE_ENV;
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const config = require("./../config");
-const db = require("./../database/connection");
+const loginService = require("./../services/login");
 
 /**
  * @swagger
@@ -13,14 +13,15 @@ const db = require("./../database/connection");
  *  schemas:
  *    RequestLogin:
  *      type: object
+ *      required:
+ *        - username
+ *        - password
  *      properties:
  *        username:
  *          type: string
- *          required: true
  *          example: cristian.naranjo@outlook.es
  *        password:
  *          type: string
- *          required: true
  *          example: Asdf1234.
  *    ResponseLogin:
  *      type: object
@@ -49,6 +50,7 @@ const db = require("./../database/connection");
  *        content:
  *          application/json:
  *            schema:
+ *              type: object
  *              $ref: '#/components/schemas/ResponseLogin'
  *      404:
  *        description: El usuario no existe.
@@ -60,41 +62,26 @@ const db = require("./../database/connection");
  */
 router.post("/", async (request, response) => {
   try {
-    const {
-      body: { username, password },
-    } = request;
+    const { body } = request;
     const {
       parsed: { JWT_PVT_KEY },
     } = config;
     const rsa = fs.readFileSync(path.join(JWT_PVT_KEY)).toString();
-
-    await db.connect();
-    await db.query({
-      sql: `
-        SELECT id, username
-        FROM users
-        WHERE username=? AND password=?
-        LIMIT 1
-      `,
-      values: [username, password]
-    }).then((result) => {
-      try {
-        const token = jwt.sign(result[0][0], rsa, { algorithm: 'RS256'});
-
-        response
-          .cookie("token", token, {
-            httpOnly: true,
-            secure: ENV,
-          })
-          .status(201)
-          .json({
-            loggin: true
-          });
-      } catch {
-        response.status(500);
-      }
+    const payload = await loginService.login(body);
+    const token = jwt.sign(payload, rsa, {
+      algorithm: "RS256",
+      expiresIn: "60m",
     });
-    db.end();
+
+    response
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: ENV,
+      })
+      .status(201)
+      .json({
+        loggin: true,
+      });
   } catch {
     response.status(500);
   }

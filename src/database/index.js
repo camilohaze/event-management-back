@@ -1,5 +1,5 @@
 const db = require("mysql2");
-const config = require("./../config");
+const config = require("../config");
 const {
   parsed: { HOST, PORT, USERNAME, PASSWORD, DATABASE },
 } = config;

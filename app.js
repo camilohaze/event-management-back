@@ -1,4 +1,3 @@
-const PORT = process.env.PORT || 3000;
 const ENV = process.env.NODE_ENV;
 
 const path = require('path')
@@ -7,6 +6,11 @@ const cookieParser = require('cookie-parser');
 const swagger = require('swagger-jsdoc');
 const swaggerUI = require('swagger-ui-express');
 const app = express();
+const config = require("./src/config");
+
+const {
+  parsed: { APP_PORT },
+} = config;
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -18,7 +22,7 @@ const swaggerOptions = {
         name: 'Cristian Camilo Naranjo Valencia',
         url: 'https://www.linkedin.com/in/cristiannaranjo/'
       },
-      server: [`http://localhost:${PORT}`]
+      server: [`http://localhost:${APP_PORT}`]
     },
     components: {
       securitySchemes: {
@@ -35,13 +39,15 @@ const swaggerOptions = {
     './src/routes/logout.js',
     './src/routes/register.js',
     './src/routes/events.js',
-    './src/routes/attendees.js'
+    './src/routes/attendees.js',
+    './src/routes/details.js'
   ],
 };
 
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('src/public'));
 
 if (ENV === 'development') {
   const livereload = require('livereload');
@@ -66,6 +72,8 @@ const register = require('./src/routes/register');
 
 const events = require('./src/routes/events');
 const attendees = require('./src/routes/attendees');
+
+const details = require('./src/routes/details');
 
 app.get('/', (request, response) => {
   response.json({
@@ -94,7 +102,7 @@ app.use('/attendees', attendees);
 /**
  * Consultar información de eventos, asistentes y lugares cercanos.
  */
-// app.use('/details', {});
+app.use('/details', details);
 
 /**
  * Swagger para la documentación.
@@ -104,6 +112,6 @@ app.use('/help', swaggerUI.serve, swaggerUI.setup(swaggerDocumentation));
 /**
  * Inicio del servicio.
  */
-app.listen(PORT, () => {
-  console.log(`App listening on http://localhost:${PORT}`);
+app.listen(APP_PORT, () => {
+  console.log(`App listening on http://localhost:${APP_PORT}`);
 });

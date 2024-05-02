@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const jwt = require("jsonwebtoken");
-const config = require("./../config");
+const config = require("../config");
 
 const authorization = (request, response, next) => {
   const {

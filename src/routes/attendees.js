@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const authorization = require("../auth/authorization");
-const db = require("./../database/connection");
+const authorization = require("./../auth");
+const attendeesService = require("./../services/attendees");
 
 /**
  * @swagger
@@ -56,15 +56,13 @@ router.get("/event/:eventId", authorization, async (request, response) => {
       params: { eventId },
     } = request;
 
-    db.connect();
-    await db
-      .query({
-        sql: `SELECT * FROM attendees WHERE id=?`,
-        values: [eventId],
-      })
-      .then(([results]) => {
-        response.status(200).json(results);
-      });
+    const attendees = await attendeesService.getByEventId(eventId);
+
+    if (attendees.length > 0) {
+      response.status(200).json(attendees);
+    } else {
+      response.status(404);
+    }
   } catch {
     response.status(500);
   }
@@ -76,18 +74,19 @@ router.get("/event/:eventId", authorization, async (request, response) => {
  *  schemas:
  *    RequestAttendees:
  *      type: object
+ *      required:
+ *        - date
+ *        - eventId
+ *        - userId
  *      properties:
  *        date:
  *          type: string
- *          required: true
  *          example: 01/05/2024
  *        eventId:
  *          type: integer
- *          required: true
  *          example: 1
  *        userId:
- *          type: string
- *          required: true
+ *          type: integer
  *          example: 1
  *    ResponseAttendees:
  *      type: object
@@ -116,6 +115,7 @@ router.get("/event/:eventId", authorization, async (request, response) => {
  *        content:
  *          application/json:
  *            schema:
+ *              type: object
  *              $ref: '#/components/schemas/ResponseAttendees'
  *      401:
  *        description: Falta información de autorización o no es válida
@@ -125,23 +125,13 @@ router.get("/event/:eventId", authorization, async (request, response) => {
  */
 router.post("/", authorization, async (request, response) => {
   try {
-    const {
-      body: { date, eventId, userId },
-    } = request;
+    const { body } = request;
 
-    db.connect();
-    await db
-      .query({
-        sql: `
-        INSERT INTO attendees(date, eventId, userId)
-        VALUES(?, ?, ?)`,
-        values: [date, eventId, userId],
-      })
-      .then(() => {
-        response.status(201).json({
-          inserted: true,
-        });
-      });
+    await attendeesService.store(body);
+
+    response.status(201).json({
+      inserted: true,
+    });
   } catch {
     response.status(500);
   }
@@ -178,6 +168,7 @@ router.post("/", authorization, async (request, response) => {
  *        content:
  *          application/json:
  *            schema:
+ *              type: object
  *              $ref: '#/components/schemas/ResponseUpdateAttendees'
  *      401:
  *        description: Falta información de autorización o no es válida
@@ -187,25 +178,13 @@ router.post("/", authorization, async (request, response) => {
  */
 router.put("/", authorization, async (request, response) => {
   try {
-    const {
-      body: { id, date },
-    } = request;
+    const { body } = request;
 
-    db.connect();
-    await db
-      .query({
-        sql: `
-          UPDATE attendees
-          SET date=?
-          WHERE id=?
-        `,
-        values: [date, id],
-      })
-      .then(() => {
-        response.status(201).json({
-          updated: true,
-        });
-      });
+    await attendeesService.update(body);
+
+    response.status(201).json({
+      updated: true,
+    });
   } catch {
     response.status(500);
   }
@@ -240,6 +219,7 @@ router.put("/", authorization, async (request, response) => {
  *        content:
  *          application/json:
  *            schema:
+ *              type: object
  *              $ref: '#/components/schemas/ResponseDeleteAttendees'
  *      404:
  *        description: No encontrado.
@@ -255,17 +235,11 @@ router.delete("/:id", authorization, async (request, response) => {
       params: { id },
     } = request;
 
-    db.connect();
-    await db
-      .query({
-        sql: `DELETE FROM attendees WHERE id=?`,
-        values: [id],
-      })
-      .then(() => {
-        response.status(200).json({
-          deleted: true,
-        });
-      });
+    await attendeesService.remove(id);
+
+    response.status(200).json({
+      deleted: true,
+    });
   } catch {
     response.status(500);
   }

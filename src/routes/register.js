@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const authorization = require("../auth/authorization");
-const db = require("./../database/connection");
+const authorization = require("./../auth");
+const registerService = require("./../services/register");
 
 /**
  * @swagger
@@ -9,26 +9,26 @@ const db = require("./../database/connection");
  *  schemas:
  *    RequestRegister:
  *      type: object
+ *      required:
+ *        - username
+ *        - password
+ *        - firstName
+ *        - lastName
  *      properties:
  *        username:
  *          type: string
- *          required: true
  *          example: cristian.naranjo@outlook.es
- *        name:
+ *        password:
  *          type: string
- *          required: true
  *          example: Asdf1234.
  *        firstName:
  *          type: string
- *          required: true
  *          example: Cristian Camilo
  *        lastName:
  *          type: string
- *          required: true
  *          example: Naranjo Valencia
  *        phone:
  *          type: string
- *          required: false
  *          example: 3197845152
  *    ResponseRegister:
  *      type: object
@@ -66,34 +66,14 @@ const db = require("./../database/connection");
  */
 router.post("/", authorization, async (request, response) => {
   try {
-    const {
-      body: { username, password, firstName, lastName, phone },
-    } = request;
+    const { body } = request;
 
-    await db.connect();
-    await db.beginTransaction();
-    await db
-      .query({
-        sql: `INSERT INTO users(username, password) VALUES(?, ?)`,
-        values: [username, password],
-      })
-      .then(async (result) => {
-        const { insertId } = result[0];
+    await registerService.register(body);
 
-        await db.query({
-          sql: `INSERT INTO profiles(firstName, lastName, phone, userId) VALUES(?, ?, ?, ?)`,
-          values: [firstName, lastName, phone, insertId],
-        });
-
-        response.status(201).json({
-          register: true,
-        });
-      });
-
-    await db.commit();
-    await db.end();
+    response.status(201).json({
+      register: true,
+    });
   } catch {
-    await db.rollback();
     response.status(500);
   }
 });
