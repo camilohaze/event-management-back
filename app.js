@@ -1,5 +1,3 @@
-const ENV = process.env.NODE_ENV;
-
 const path = require('path')
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -48,21 +46,6 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('src/public'));
-
-if (ENV === 'development') {
-  const livereload = require('livereload');
-  const connect = require('connect-livereload');
-
-  const reloadServer = livereload.createServer();
-
-  reloadServer.watch(path.join(__dirname, "dist"));
-  reloadServer.server.once("connection", () => {
-    setTimeout(() => {
-      reloadServer.refresh("/");
-    }, 100);
-  });
-  app.use(connect());
-}
 
 const swaggerDocumentation = swagger(swaggerOptions);
 

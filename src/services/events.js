@@ -1,13 +1,16 @@
 const db = require("./../database");
 const formatDate = require("./../utilities/format-date");
-const eventService = require("./../services/images");
+const imagesService = require("./../services/images");
 
 const getAll = async () => {
   db.connect();
 
   return db
     .query({
-      sql: `SELECT * FROM events`,
+      sql: `
+        SELECT *
+        FROM events
+      `,
     })
     .then(([results]) => results);
 };
@@ -17,7 +20,11 @@ const getById = async (id) => {
 
   return db
     .query({
-      sql: `SELECT * FROM events WHERE id=?`,
+      sql: `
+        SELECT *
+        FROM events
+        WHERE id=?
+      `,
       values: [id],
     })
     .then(([results]) => results[0]);
@@ -26,6 +33,8 @@ const getById = async (id) => {
 const store = async (event) => {
   const {
     title,
+    description,
+    detail,
     startDate,
     endDate,
     location,
@@ -39,11 +48,13 @@ const store = async (event) => {
 
   return db.query({
     sql: `
-      INSERT INTO events(title, startDate, endDate, location, latitude, longitude, userId, imageId)
+      INSERT INTO events(title, description, detail, startDate, endDate, location, latitude, longitude, userId, imageId)
       VALUES(?, ?, ?, ?, ?, ?, ?, ?)
     `,
     values: [
       title,
+      description,
+      detail,
       formatDate(startDate),
       formatDate(endDate),
       location,
@@ -59,6 +70,8 @@ const update = async (event) => {
   const {
     id,
     title,
+    description,
+    detail,
     startDate,
     endDate,
     location,
@@ -71,11 +84,13 @@ const update = async (event) => {
   return db.query({
     sql: `
       UPDATE events
-      SET title=?, startDate=?, endDate=?, location=?, latitude=?, longitude=?, imageId=?
+      SET title=?, description=?, detail=?, startDate=?, endDate=?, location=?, latitude=?, longitude=?, imageId=?
       WHERE id=?
     `,
     values: [
       title,
+      description,
+      detail,
       formatDate(startDate),
       formatDate(endDate),
       location,
@@ -91,7 +106,10 @@ const remove = async (id) => {
   db.connect();
 
   return db.query({
-    sql: `DELETE FROM events WHERE id=?`,
+    sql: `
+      DELETE FROM events
+      WHERE id=?
+    `,
     values: [id],
   });
 };
@@ -107,7 +125,7 @@ const csv = async (events, userId) => {
 
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
-    const imageId = await eventService
+    const imageId = await imagesService
       .store("/uploads/400x200.png")
       .then((result) => result[0].insertId);
 
@@ -121,6 +139,8 @@ const csv = async (events, userId) => {
 
       success.push(event);
     } catch {
+      await imagesService.remove(imageId);
+
       failed.push(event);
     }
   }

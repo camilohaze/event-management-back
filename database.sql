@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS users (
 	id INT AUTO_INCREMENT,
 	username VARCHAR(30) NOT NULL,
 	password VARCHAR(100) NOT NULL,
-	CONSTRAINT PK_Users PRIMARY KEY (id)
+	CONSTRAINT PK_Users PRIMARY KEY (id),
+	CONSTRAINT U_Username UNIQUE (username)
 );
 
 CREATE TABLE IF NOT EXISTS profiles (
@@ -20,12 +21,15 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS images (
 	id INT AUTO_INCREMENT,
 	url VARCHAR(250) NOT NULL DEFAULT '/uploads/400x200.png',
-	CONSTRAINT PK_Images PRIMARY KEY (id)
+	CONSTRAINT PK_Images PRIMARY KEY (id),
+	CONSTRAINT U_Url UNIQUE (url)
 );
 
 CREATE TABLE IF NOT EXISTS events (
 	id INT AUTO_INCREMENT,
 	title VARCHAR(125) NOT NULL,
+	description VARCHAR(1000) NOT NULL,
+	detail LONGTEXT NOT NULL,
 	startDate DATE NOT NULL,
 	endDate DATE NOT NULL,
 	location VARCHAR(150) NOT NULL,
@@ -35,7 +39,8 @@ CREATE TABLE IF NOT EXISTS events (
 	imageId INT NOT NULL,
 	CONSTRAINT PK_Events PRIMARY KEY (id),
 	CONSTRAINT FK_EventsImages FOREIGN KEY (imageId) REFERENCES images(id),
-	CONSTRAINT FK_EventsUsers FOREIGN KEY (userId) REFERENCES users(id)
+	CONSTRAINT FK_EventsUsers FOREIGN KEY (userId) REFERENCES users(id),
+	CONSTRAINT U_Event UNIQUE (title,latitude,longitude)
 );
 
 CREATE TABLE IF NOT EXISTS attendees (
@@ -45,5 +50,6 @@ CREATE TABLE IF NOT EXISTS attendees (
 	userId INT NOT NULL,
 	CONSTRAINT PK_Attendees PRIMARY KEY (id),
 	CONSTRAINT FK_AttendeesEvents FOREIGN KEY (eventId) REFERENCES events(id),
-	CONSTRAINT FK_AttendeesUsers FOREIGN KEY (userId) REFERENCES users(id)
+	CONSTRAINT FK_AttendeesUsers FOREIGN KEY (userId) REFERENCES users(id),
+	CONSTRAINT U_Attendees UNIQUE (date,eventId,userId)
 );
