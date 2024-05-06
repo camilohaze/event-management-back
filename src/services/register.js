@@ -5,21 +5,23 @@ const register = async (user) => {
 
   try {
     db.connect();
-    db.beginTransaction();
-    db.query({
+    await db.beginTransaction();
+    await db.query({
       sql: `INSERT INTO users(username, password) VALUES(?, ?)`,
       values: [username, password],
-    }).then((result) => {
+    }).then(async (result) => {
       const { insertId } = result[0];
 
-      db.query({
+      await db.query({
         sql: `INSERT INTO profiles(firstName, lastName, phone, userId) VALUES(?, ?, ?, ?)`,
         values: [firstName, lastName, phone, insertId],
       });
     });
-    db.commit();
+    await db.commit();
   } catch (error) {
-    return  error;
+    await db.rollback();
+
+    throw error;
   }
 };
 

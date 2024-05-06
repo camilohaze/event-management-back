@@ -4,9 +4,10 @@ const multer = require("multer");
 const { parse } = require("csv-parse");
 const { extname } = require("path");
 
-const authorization = require("./../auth");
+const { authorization } = require("./../auth");
 const eventService = require("./../services/events");
 const imageService = require("./../services/images");
+const dateService = require("./../services/dates");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -31,7 +32,7 @@ const cvs = multer();
  * @swagger
  * components:
  *  schemas:
- *    Events:
+ *    ResponseEvents:
  *      type: object
  *      properties:
  *        id:
@@ -40,15 +41,21 @@ const cvs = multer();
  *        title:
  *          type: string
  *          example: La Solar 2024
- *        image:
+ *        description:
  *          type: string
- *          example: https://picsum.photos/400/200
- *        startDate:
+ *          example: Una breve descripción
+ *        startTime:
  *          type: string
- *          example: 01/05/2024
- *        endDate:
+ *          example: 21:00:00
+ *        openingTime:
  *          type: string
- *          example: 05/05/2024
+ *          example: 20:00:00
+ *        minimumAge:
+ *          type: boolean
+ *          example: true
+ *        specialZone:
+ *          type: boolean
+ *          example: true
  *        location:
  *          type: string
  *          example: Parque Norte
@@ -61,6 +68,19 @@ const cvs = multer();
  *        userId:
  *          type: integer
  *          example: 1
+ *        categoryId:
+ *          type: integer
+ *          example: 1
+ *        category:
+ *          type: string
+ *          example: Conciertos
+ *        image:
+ *          type: string
+ *          example: https://picsum.photos/400/200
+ *        dates:
+ *          type: array
+ *          items:
+ *            $ref: '#/components/schemas/Dates'
  * /events:
  *  tags:
  *    name: Events
@@ -76,7 +96,7 @@ const cvs = multer();
  *            schema:
  *              type: array
  *              items:
- *                $ref: '#/components/schemas/Events'
+ *                $ref: '#/components/schemas/ResponseEvents'
  *      404:
  *        description: No encontrado.
  *      401:
@@ -85,13 +105,17 @@ const cvs = multer();
  *        description: Error interno del servidor
  *
  */
-router.get("/", authorization, async (request, response) => {
+router.get("/", async (request, response) => {
   try {
     const events = await eventService.getAll();
 
-    response.status(200).json(events);
+    if (events.length > 0) {
+      return response.status(200).json(events);
+    }
+
+    return response.status(404).json([]);
   } catch {
-    response.status(500);
+    response.status(500).json();
   }
 });
 
@@ -117,7 +141,7 @@ router.get("/", authorization, async (request, response) => {
  *          application/json:
  *            schema:
  *              type: object
- *              $ref: '#/components/schemas/Events'
+ *              $ref: '#/components/schemas/ResponseEvents'
  *      404:
  *        description: No encontrado.
  *      401:
@@ -126,7 +150,7 @@ router.get("/", authorization, async (request, response) => {
  *        description: Error interno del servidor
  *
  */
-router.get("/:id", authorization, async (request, response) => {
+router.get("/:id", async (request, response) => {
   try {
     const {
       params: { id },
@@ -135,12 +159,56 @@ router.get("/:id", authorization, async (request, response) => {
     const event = await eventService.getById(id);
 
     if (event) {
-      response.status(200).json(event);
-    } else {
-      response.status(404);
+      return response.status(200).json(event);
     }
-  } catch {
-    response.status(500);
+
+    return response.status(404).json();
+  } catch (error) {
+    return response.status(500).json();
+  }
+});
+
+/**
+ * @swagger
+ * /events/user:
+ *  tags:
+ *    name: Events
+ *  post:
+ *    summary: Retorna una lista de eventos por el id del usuario en sesión.
+ *    tags: [Events]
+ *    description: Método para retornar una lista de eventos.
+ *    responses:
+ *      200:
+ *        description: Ok.
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                $ref: '#/components/schemas/ResponseEvents'
+ *      404:
+ *        description: No encontrado.
+ *      401:
+ *        description: Falta información de autorización o no es válida
+ *      500:
+ *        description: Error interno del servidor
+ *
+ */
+router.post("/user", authorization, async (request, response) => {
+  try {
+    const {
+      data: { id },
+    } = request;
+
+    const events = await eventService.getByUserId(id);
+
+    if (events.length > 0) {
+      return response.status(200).json(events);
+    }
+
+    return response.status(404).json();
+  } catch (error) {
+    return response.status(500).json();
   }
 });
 
@@ -148,30 +216,50 @@ router.get("/:id", authorization, async (request, response) => {
  * @swagger
  * components:
  *  schemas:
- *    RequestEvent:
+ *    Dates:
+ *      type: object
+ *      required:
+ *        - date
+ *        - eventId
+ *      properties:
+ *        date:
+ *          type: string
+ *          example: 2024-05-01
+ *        eventId:
+ *          type: integer
+ *          example: 1
+ *    RequestStoreEvent:
  *      type: object
  *      required:
  *        - title
- *        - image
- *        - startDate
- *        - endDate
+ *        - description
+ *        - startTime
+ *        - openingTime
  *        - location
  *        - latitude
  *        - longitude
  *        - userId
+ *        - categoryId
+ *        - dates
  *      properties:
  *        title:
  *          type: string
  *          example: La Sonora 2024
- *        image:
+ *        description:
  *          type: string
- *          example: https://picsum.photos/400/200
- *        startDate:
+ *          example: Una breve drescripción
+ *        startTime:
  *          type: string
- *          example: 01/05/2024
- *        endDate:
+ *          example: 21:00:00
+ *        openingTime:
  *          type: string
- *          example: 05/05/2024
+ *          example: 20:00:00
+ *        minimumAge:
+ *          type: boolean
+ *          example: true
+ *        specialZone:
+ *          type: boolean
+ *          example: true
  *        location:
  *          type: string
  *          example: Parque Norte
@@ -182,9 +270,16 @@ router.get("/:id", authorization, async (request, response) => {
  *          type: string
  *          example: -75.5679465818133
  *        userId:
- *          type: string
+ *          type: integer
  *          example: 1
- *    ResponseEvent:
+ *        categoryId:
+ *          type: integer
+ *          example: 1
+ *        dates:
+ *          type: array
+ *          items:
+ *            $ref: '#/components/schemas/Dates'
+ *    ResponseStoreEvent:
  *      type: object
  *      properties:
  *        inserted:
@@ -204,7 +299,7 @@ router.get("/:id", authorization, async (request, response) => {
  *        required: true
  *        schema:
  *          type: object
- *          $ref: '#/components/schemas/RequestEvent'
+ *          $ref: '#/components/schemas/RequestStoreEvent'
  *    responses:
  *      201:
  *        description: Evento creado.
@@ -212,7 +307,7 @@ router.get("/:id", authorization, async (request, response) => {
  *          application/json:
  *            schema:
  *              type: object
- *              $ref: '#/components/schemas/ResponseEvent'
+ *              $ref: '#/components/schemas/ResponseStoreEvent'
  *      401:
  *        description: Falta información de autorización o no es válida
  *      500:
@@ -221,15 +316,33 @@ router.get("/:id", authorization, async (request, response) => {
  */
 router.post("/", authorization, async (request, response) => {
   try {
-    const { body } = request;
+    const {
+      body,
+      data: { id },
+    } = request;
 
-    await eventService.store(body);
+    body.userId = id;
+
+    const eventId = await eventService
+      .store(body)
+      .then((result) => result[0].insertId);
+
+    for (let i = 0; i < body.dates.length; i++) {
+      const date = {
+        date: body.dates[i].date,
+        eventId,
+      };
+
+      await dateService.store(date);
+    }
 
     response.status(201).json({
       inserted: true,
+      eventId,
     });
-  } catch {
-    response.status(500);
+  } catch (error) {
+    console.log(error);
+    response.status(500).json();
   }
 });
 
@@ -237,6 +350,60 @@ router.post("/", authorization, async (request, response) => {
  * @swagger
  * components:
  *  schemas:
+ *    RequestUpdateEvent:
+ *      type: object
+ *      required:
+ *        - id
+ *        - title
+ *        - description
+ *        - startTime
+ *        - openingTime
+ *        - location
+ *        - latitude
+ *        - longitude
+ *        - userId
+ *        - categoryId
+ *      properties:
+ *        id:
+ *          type: integer
+ *          example: 1
+ *        title:
+ *          type: string
+ *          example: La Sonora 2024
+ *        description:
+ *          type: string
+ *          example: Una breve drescripción
+ *        startTime:
+ *          type: string
+ *          example: 21:00:00
+ *        openingTime:
+ *          type: string
+ *          example: 20:00:00
+ *        minimumAge:
+ *          type: boolean
+ *          example: true
+ *        specialZone:
+ *          type: boolean
+ *          example: true
+ *        location:
+ *          type: string
+ *          example: Parque Norte
+ *        latitude:
+ *          type: string
+ *          example: 6.2723557
+ *        longitude:
+ *          type: string
+ *          example: -75.5679465818133
+ *        userId:
+ *          type: integer
+ *          example: 1
+ *        categoryId:
+ *          type: integer
+ *          example: 1
+ *        dates:
+ *          type: array
+ *          items:
+ *            $ref: '#/components/schemas/RequestDates'
  *    ResponseUpdateEvent:
  *      type: object
  *      properties:
@@ -249,7 +416,7 @@ router.post("/", authorization, async (request, response) => {
  *  put:
  *    summary: Actualizar un evento.
  *    tags: [Events]
- *    description: Método para actualizar un evento nuevo en la plataforma.
+ *    description: Método para actualizar un evento en la plataforma.
  *    consumes: application/json
  *    parameters:
  *      - in: body
@@ -257,10 +424,15 @@ router.post("/", authorization, async (request, response) => {
  *        required: true
  *        schema:
  *          type: object
- *          $ref: '#/components/schemas/RequestEvent'
+ *          $ref: '#/components/schemas/RequestUpdateEvent'
+ *      - in: formData
+ *        name: file
+ *        schema:
+ *          type: file
+ *        type: file
  *    responses:
  *      201:
- *        description: Evento creado.
+ *        description: Evento actualizado.
  *        content:
  *          application/json:
  *            schema:
@@ -274,15 +446,26 @@ router.post("/", authorization, async (request, response) => {
  */
 router.put("/", authorization, async (request, response) => {
   try {
-    const { body } = request;
+    const { body, body: { id } } = request;
 
     await eventService.update(body);
+    await dateService.removeByEventId(id);
+
+    for (let i = 0; i < body.dates.length; i++) {
+      const date = {
+        date: body.dates[i].date,
+        eventId: id,
+      };
+
+      await dateService.store(date);
+    }
 
     response.status(201).json({
       updated: true,
     });
-  } catch {
-    response.status(500);
+  } catch(error) {
+    console.log(error);
+    response.status(500).json();
   }
 });
 
@@ -337,7 +520,7 @@ router.delete("/:id", authorization, async (request, response) => {
       deleted: true,
     });
   } catch {
-    response.status(500);
+    response.status(500).json();
   }
 });
 
@@ -357,7 +540,7 @@ router.delete("/:id", authorization, async (request, response) => {
  *        url:
  *          type: string
  *          example: /uploads/events_1714622296244-30AA2A625AD0C4DF.png
- * /events/upload:
+ * /events/upload/{eventId}:
  *  tags:
  *    name: Events
  *  post:
@@ -366,6 +549,11 @@ router.delete("/:id", authorization, async (request, response) => {
  *    description: Método para cargar la imagen de un evento en la plataforma.
  *    consumes: application/json
  *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: integer
  *      - in: formData
  *        name: file
  *        schema:
@@ -389,26 +577,31 @@ router.delete("/:id", authorization, async (request, response) => {
  *
  */
 router.post(
-  "/upload",
+  "/upload/:eventId",
   authorization,
   upload.single("file"),
   async (request, response) => {
     try {
-      const { file } = request;
+      const {
+        file,
+        params: { eventId },
+      } = request;
 
       if (!file) return response.status(400);
 
+      let fullUrl = request.protocol + "://" + request.get("host");
       const { filename } = file;
-      const url = `/uploads/${filename}`;
+      const url = `${fullUrl}/uploads/${filename}`;
 
-      const imageId = await imageService
-        .store(url)
-        .then((result) => result[0].insertId);
+      const image = {
+        url,
+        eventId,
+      };
+
+      await imageService.store(image);
 
       response.status(201).json({
         uploaded: true,
-        imageId,
-        url,
       });
     } catch {
       response.status(500);
@@ -429,11 +622,11 @@ router.post(
  *        success:
  *          type: array
  *          items:
- *            $ref: '#/components/schemas/Events'
+ *            $ref: '#/components/schemas/ResponseEvents'
  *        failed:
  *          type: array
  *          items:
- *            $ref: '#/components/schemas/Events'
+ *            $ref: '#/components/schemas/ResponseEvents'
  *    ResponseImport:
  *      type: object
  *      properties:
@@ -482,7 +675,7 @@ router.post(
     try {
       const { file } = request;
 
-      if (!file) return response.status(400);
+      if (!file) return response.status(400).json();
 
       const { buffer } = file;
 
@@ -490,27 +683,23 @@ router.post(
         buffer,
         {
           delimiter: ",",
-          fromLine: 2,
-          columns: [
-            "title",
-            "startDate",
-            "endDate",
-            "location",
-            "latitude",
-            "longitude",
-          ],
+          groupColumnsByName: true,
+          fromLine: 1,
+          columns: true,
         },
         async (error, events) => {
           if (error) return response.status(400).json(error);
 
-          const { id } = request;
+          const {
+            data: { id },
+          } = request;
           const imported = await eventService.csv(events, id);
 
           response.status(201).json(imported);
         }
       );
     } catch {
-      response.status(500);
+      response.status(500).json();
     }
   }
 );

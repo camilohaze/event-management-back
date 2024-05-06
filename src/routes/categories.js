@@ -1,37 +1,72 @@
 const express = require("express");
 const router = express.Router();
+
 const { authorization } = require("./../auth");
-const attendeesService = require("./../services/attendees");
+const categoriesService = require("./../services/categories");
 
 /**
  * @swagger
  * components:
  *  schemas:
- *    Attendees:
+ *    Categories:
  *      type: object
  *      properties:
  *        id:
  *          type: integer
  *          example: 1
- *        date:
+ *        name:
  *          type: string
- *          example: 01/05/2024
- *        eventId:
- *          type: integer
- *          example: 1
- *        userId:
- *          type: integer
- *          example: 1
- * /attendees/event/{eventId}:
+ *          example: Conciertos
+ * /categories:
  *  tags:
- *    name: Attendees
+ *    name: Categories
  *  get:
- *    summary: Retorna una lista de asistentes por el id de un evento.
- *    tags: [Attendees]
- *    description: Retorna una lista de asistentes por el id de un evento.
+ *    summary: Retorna una lista de categorias.
+ *    tags: [Categories]
+ *    description: Método para retornar una lista de categorias.
+ *    responses:
+ *      200:
+ *        description: Ok.
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                $ref: '#/components/schemas/Categories'
+ *      404:
+ *        description: No encontrado.
+ *      401:
+ *        description: Falta información de autorización o no es válida
+ *      500:
+ *        description: Error interno del servidor
+ *
+ */
+router.get("/", authorization, async (request, response) => {
+  try {
+    const events = await categoriesService.getAll();
+
+    if (events.length > 0) {
+      return response.status(200).json(events);
+    }
+
+    return response.status(404).json([]);
+  } catch (error) {
+    response.status(500).json();
+  }
+});
+
+/**
+ * @swagger
+ * /categories/{id}:
+ *  tags:
+ *    name: Categories
+ *  get:
+ *    summary: Retorna una categoría por su id.
+ *    tags: [Categories]
+ *    description: Retorna un categoría por su id.
  *    parameters:
  *      - in: path
- *        name: eventId
+ *        name: id
  *        required: true
  *        schema:
  *          type: integer
@@ -41,7 +76,8 @@ const attendeesService = require("./../services/attendees");
  *        content:
  *          application/json:
  *            schema:
- *              $ref: '#/components/schemas/Attendees'
+ *              type: object
+ *              $ref: '#/components/schemas/Categories'
  *      404:
  *        description: No encontrado.
  *      401:
@@ -50,21 +86,21 @@ const attendeesService = require("./../services/attendees");
  *        description: Error interno del servidor
  *
  */
-router.get("/event/:eventId", authorization, async (request, response) => {
+router.get("/:id", authorization, async (request, response) => {
   try {
     const {
-      params: { eventId },
+      params: { id },
     } = request;
 
-    const attendees = await attendeesService.getByEventId(eventId);
+    const event = await categoriesService.getById(id);
 
-    if (attendees.length > 0) {
-      response.status(200).json(attendees);
-    } else {
-      response.status(404).json();
+    if (event) {
+      return response.status(200).json(event);
     }
-  } catch {
-    response.status(500).json();
+
+    return response.status(404).json();
+  } catch (error) {
+    return response.status(500).json();
   }
 });
 
@@ -72,35 +108,27 @@ router.get("/event/:eventId", authorization, async (request, response) => {
  * @swagger
  * components:
  *  schemas:
- *    RequestAttendees:
+ *    RequestCategory:
  *      type: object
  *      required:
- *        - date
- *        - eventId
- *        - userId
+ *        - name
  *      properties:
- *        date:
+ *        name:
  *          type: string
- *          example: 01/05/2024
- *        eventId:
- *          type: integer
- *          example: 1
- *        userId:
- *          type: integer
- *          example: 1
- *    ResponseAttendees:
+ *          example: Conciertos
+ *    ResponseCategory:
  *      type: object
  *      properties:
  *        inserted:
  *          type: boolean
  *          example: true
- * /attendees:
+ * /categories:
  *  tags:
- *    name: Attendees
+ *    name: Categories
  *  post:
- *    summary: Registrar un asistente.
- *    tags: [Attendees]
- *    description: Método para registrar un asistente a un evento de la plataforma.
+ *    summary: Registrar una categoría.
+ *    tags: [Categories]
+ *    description: Método para registrar una categoría nueva en la plataforma.
  *    consumes: application/json
  *    parameters:
  *      - in: body
@@ -108,15 +136,15 @@ router.get("/event/:eventId", authorization, async (request, response) => {
  *        required: true
  *        schema:
  *          type: object
- *          $ref: '#/components/schemas/RequestAttendees'
+ *          $ref: '#/components/schemas/RequestCategory'
  *    responses:
  *      201:
- *        description: Asistente registrado.
+ *        description: Categoría creada.
  *        content:
  *          application/json:
  *            schema:
  *              type: object
- *              $ref: '#/components/schemas/ResponseAttendees'
+ *              $ref: '#/components/schemas/ResponseCategory'
  *      401:
  *        description: Falta información de autorización o no es válida
  *      500:
@@ -127,7 +155,7 @@ router.post("/", authorization, async (request, response) => {
   try {
     const { body } = request;
 
-    await attendeesService.store(body);
+    await categoriesService.store(body);
 
     response.status(201).json({
       inserted: true,
@@ -141,19 +169,19 @@ router.post("/", authorization, async (request, response) => {
  * @swagger
  * components:
  *  schemas:
- *    ResponseUpdateAttendees:
+ *    ResponseUpdateCategory:
  *      type: object
  *      properties:
  *        updated:
  *          type: boolean
  *          example: true
- * /attendees:
+ * /categories:
  *  tags:
- *    name: Attendees
+ *    name: Categories
  *  put:
- *    summary: Actualizar un asistente.
- *    tags: [Attendees]
- *    description: Método para actualizar asistente a un evento de la plataforma.
+ *    summary: Actualizar una categoría.
+ *    tags: [Categories]
+ *    description: Método para actualizar una categoría en la plataforma.
  *    consumes: application/json
  *    parameters:
  *      - in: body
@@ -161,15 +189,15 @@ router.post("/", authorization, async (request, response) => {
  *        required: true
  *        schema:
  *          type: object
- *          $ref: '#/components/schemas/RequestAttendees'
+ *          $ref: '#/components/schemas/RequestCategory'
  *    responses:
  *      201:
- *        description: Asistente actualizado.
+ *        description: Categoría actualizada.
  *        content:
  *          application/json:
  *            schema:
  *              type: object
- *              $ref: '#/components/schemas/ResponseUpdateAttendees'
+ *              $ref: '#/components/schemas/ResponseUpdateCategory'
  *      401:
  *        description: Falta información de autorización o no es válida
  *      500:
@@ -180,7 +208,7 @@ router.put("/", authorization, async (request, response) => {
   try {
     const { body } = request;
 
-    await attendeesService.update(body);
+    await categoriesService.update(body);
 
     response.status(201).json({
       updated: true,
@@ -194,19 +222,19 @@ router.put("/", authorization, async (request, response) => {
  * @swagger
  * components:
  *  schemas:
- *    ResponseDeleteAttendees:
+ *    ResponseDeleteEvent:
  *      type: object
  *      properties:
  *        deleted:
  *          type: boolean
  *          example: true
- * /attendees/{id}:
+ * /categories/{id}:
  *  tags:
- *    name: Attendees
+ *    name: Categories
  *  delete:
- *    summary: Elimina un asistente.
- *    tags: [Attendees]
- *    description: Método para eliminar asistente a un evento de la plataforma.
+ *    summary: Elimina una categoría.
+ *    tags: [Categories]
+ *    description: Método para eliminar una categoría de la plataforma.
  *    parameters:
  *      - in: path
  *        name: id
@@ -215,12 +243,12 @@ router.put("/", authorization, async (request, response) => {
  *          type: integer
  *    responses:
  *      201:
- *        description: Asistente eliminado.
+ *        description: Categoría eliminada.
  *        content:
  *          application/json:
  *            schema:
  *              type: object
- *              $ref: '#/components/schemas/ResponseDeleteAttendees'
+ *              $ref: '#/components/schemas/ResponseDeleteCategory'
  *      404:
  *        description: No encontrado.
  *      401:
@@ -235,7 +263,7 @@ router.delete("/:id", authorization, async (request, response) => {
       params: { id },
     } = request;
 
-    await attendeesService.remove(id);
+    await categoriesService.remove(id);
 
     response.status(200).json({
       deleted: true,

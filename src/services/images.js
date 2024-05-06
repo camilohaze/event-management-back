@@ -1,36 +1,60 @@
-const db = require("./../database");
+const fs = require("fs");
+const db = require("../database");
 
-const getById = (id) => {
-  db.connect();
+const store = async (image) => {
+  const { url, eventId } = image;
 
-  return db
-    .query({
-      sql: `SELECT * FROM images WHERE id=?`,
-      values: [id],
-    })
-    .then(([results]) => results[0]);
-};
-
-const store = (url) => {
-  db.connect();
-
-  return db
-    .query({
-      sql: `
-        INSERT INTO images(url)
-        VALUES(?)
-      `,
-      values: [url],
-    });
-};
-
-const remove = (id) => {
   db.connect();
 
   return db.query({
-    sql: `DELETE FROM events WHERE id=?`,
+    sql: `
+      INSERT INTO images(url, eventId)
+      VALUES(?, ?)
+    `,
+    values: [url, eventId],
+  });
+};
+
+const update = async (category) => {
+  const { id, url } = category;
+
+  db.connect();
+  return db.query({
+    sql: `
+      UPDATE images
+      SET url=?
+      WHERE id=?
+    `,
+    values: [url, id],
+  });
+};
+
+const remove = async (id) => {
+  db.connect();
+
+  return db.query({
+    sql: `
+      DELETE FROM images
+      WHERE id=?
+    `,
     values: [id],
   });
 };
 
-module.exports = { getById, store, remove };
+const removeByEventId = async (id) => {
+  db.connect();
+
+  return db.query({
+    sql: `
+      DELETE FROM images
+      WHERE eventId=?
+    `,
+    values: [id],
+  });
+};
+
+const removeFile = (path) => {
+  fs.unlinkSync(path);
+};
+
+module.exports = { store, update, remove, removeByEventId, removeFile };

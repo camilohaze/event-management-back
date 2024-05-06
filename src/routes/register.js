@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const authorization = require("./../auth");
 const registerService = require("./../services/register");
 
 /**
@@ -64,7 +63,7 @@ const registerService = require("./../services/register");
  *        description: Error interno del servidor
  *
  */
-router.post("/", authorization, async (request, response) => {
+router.post("/", async (request, response) => {
   try {
     const { body } = request;
 
@@ -73,8 +72,28 @@ router.post("/", authorization, async (request, response) => {
     response.status(201).json({
       register: true,
     });
-  } catch {
-    response.status(500);
+  } catch (error) {
+    const { code, message } = error;
+
+    switch (code) {
+      case "ER_BAD_NULL_ERROR":
+        return response.status(400).json({
+          code,
+          message,
+        });
+
+      case "ER_DUP_ENTRY":
+        return response.status(422).json({
+          code,
+          message,
+        });
+
+      default:
+        // code here!
+        break;
+    }
+
+    response.status(500).json();
   }
 });
 

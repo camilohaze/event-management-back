@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const authorization = require("./../auth");
+const { authorization } = require("./../auth");
 
 /**
  * @swagger
@@ -25,8 +25,9 @@ const authorization = require("./../auth");
  *        description: Error interno del servidor
  */
 router.post("/", authorization, (request, response) => {
-  return response.clearCookie("token").status(200).json({
-    loggin: false,
+  return response.clearCookie("token").clearCookie("refresh").status(200).json({
+    login: false,
+    role: "",
   });
 });
 

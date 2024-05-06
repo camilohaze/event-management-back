@@ -4,46 +4,20 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 
+const { refresToken } = require("./../auth");
 const config = require("./../config");
-const loginService = require("./../services/login");
+const refreshService = require("./../services/refresh");
 
 /**
  * @swagger
- * components:
- *  schemas:
- *    RequestLogin:
- *      type: object
- *      required:
- *        - username
- *        - password
- *      properties:
- *        username:
- *          type: string
- *          example: cristian.naranjo@outlook.es
- *        password:
- *          type: string
- *          example: Asdf1234.
- *    ResponseLogin:
- *      type: object
- *      properties:
- *        login:
- *          type: boolean
- *          example: true
- * /login:
+ * /refresh:
  *  tags:
- *    name: Login
+ *    name: Refresh
  *  post:
- *    summary: Inicio de sessión.
- *    tags: [Login]
+ *    summary: Recupera la sesión.
+ *    tags: [Refresh]
  *    description: Método para autenticar los usuarios en la plataforma.
  *    consumes: application/json
- *    parameters:
- *      - in: body
- *        name: body
- *        required: true
- *        schema:
- *          type: object
- *          $ref: '#/components/schemas/RequestLogin'
  *    responses:
  *      201:
  *        description: Usuario autenticado.
@@ -60,16 +34,16 @@ const loginService = require("./../services/login");
  *        description: Error interno del servidor
  *
  */
-router.post("/", async (request, response) => {
+router.post("/", refresToken, async (request, response) => {
   try {
-    const { body } = request;
+    const { data } = request;
     const {
       parsed: { JWT_PVT_KEY, JWT_REFRESH_PVT_KEY },
     } = config;
     const rsaToken = fs.readFileSync(path.join(JWT_PVT_KEY)).toString();
     const rsaRefresh = fs.readFileSync(path.join(JWT_REFRESH_PVT_KEY)).toString();
 
-    const user = await loginService.login(body);
+    const user = await refreshService.login(data);
 
     if (user) {
       const token = jwt.sign(user, rsaToken, {
@@ -104,7 +78,7 @@ router.post("/", async (request, response) => {
       login: false,
       role: '',
     });
-  } catch {
+  } catch(error) {
     response.status(500).json();
   }
 });

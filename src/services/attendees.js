@@ -23,31 +23,16 @@ const getByUserId = async (userId) => {
 };
 
 const store = async (attendees) => {
-  const { date, eventId, userId } = attendees;
+  const { date, dateId, eventId, userId } = attendees;
 
   db.connect();
 
   return db.query({
     sql: `
-      INSERT INTO attendees(date, eventId, userId)
-      VALUES(?, ?, ?)
+      INSERT INTO attendees(date, dateId, eventId, userId)
+      VALUES(?, ?, ?, ?)
     `,
-    values: [date, eventId, userId],
-  });
-};
-
-const update = async (attendees) => {
-  const { id, date } = attendees;
-
-  db.connect();
-
-  return db.query({
-    sql: `
-      UPDATE attendees
-      SET date=?
-      WHERE id=?
-    `,
-    values: [date, id],
+    values: [date, dateId, eventId, userId],
   });
 };
 
@@ -60,4 +45,29 @@ const remove = (id) => {
   });
 };
 
-module.exports = { getByEventId, getByUserId, store, update, remove };
+const removeDateId = (id) => {
+  db.connect();
+
+  return db.query({
+    sql: `DELETE FROM attendees WHERE dateId=?`,
+    values: [id],
+  });
+};
+
+const removeEventId = (id) => {
+  db.connect();
+
+  return db.query({
+    sql: `DELETE FROM attendees WHERE eventId=?`,
+    values: [id],
+  });
+};
+
+module.exports = {
+  getByEventId,
+  getByUserId,
+  store,
+  remove,
+  removeDateId,
+  removeEventId,
+};
